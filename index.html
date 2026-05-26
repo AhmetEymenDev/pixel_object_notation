@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Pixel Asset Pipeline</title>
+    <style>
+      body {
+        background-color: #121212;
+        color: #ffffff;
+        font-family: "Courier New", Courier, monospace;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+      }
+      .ai-notice {
+        color: #ff3333;
+        border: 1px solid #ff3333;
+        padding: 10px 20px;
+        margin-bottom: 20px;
+        text-transform: uppercase;
+        font-weight: bold;
+        letter-spacing: 1px;
+      }
+      .container {
+        display: flex;
+        gap: 20px;
+        max-width: 1000px;
+        width: 100%;
+      }
+      .control-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      textarea {
+        width: 100%;
+        height: 300px;
+        background-color: #1e1e1e;
+        color: #00ff00;
+        border: 1px solid #333;
+        padding: 10px;
+        font-family: monospace;
+        resize: none;
+      }
+      .canvas-panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #1a1a1a;
+        border: 1px solid #333;
+        padding: 20px;
+        min-height: 400px;
+        justify-content: center;
+      }
+      .slider-container {
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      button {
+        background-color: #007acc;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+      button:hover {
+        background-color: #005999;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="ai-notice">
+      THIS SITE IS AN AUTOMATED PIPELINE FOR PON (PIXEL OBJECT NOTATION). NOT
+      CREATED FOR HUMANS, DESIGNED FOR ARTIFICIAL INTELLIGENCE.
+    </div>
+
+    <div class="container">
+      <div class="control-panel">
+        <label for="jsonInput">Paste AI Generated JSON here:</label>
+        <textarea
+          id="jsonInput"
+          placeholder='[
+  { "x": 0, "y": 0, "r": 255, "g": 0, "b": 0, "a": 1 },
+  { "x": 1, "y": 0, "r": 255, "g": 0, "b": 0, "a": 1 },
+  { "x": 2, "y": 0, "r": 255, "g": 0, "b": 0, "a": 1 },
+  { "x": 3, "y": 0, "r": 255, "g": 0, "b": 0, "a": 1 },
+  { "x": 4, "y": 0, "r": 255, "g": 0, "b": 0, "a": 1 },
+  { "x": 5, "y": 0, "r": 255, "g": 0, "b": 0, "a": 1 }
+]
+'
+        ></textarea>
+
+        <div class="slider-container">
+          <label for="pixelSizeSlider">Display Pixel Size:</label>
+          <input
+            type="range"
+            id="pixelSizeSlider"
+            min="1"
+            max="50"
+            value="20"
+          />
+          <span id="pixelSizeValue">20px</span>
+        </div>
+
+        <button id="renderBtn">Render & Export PNG</button>
+      </div>
+
+      <div class="canvas-panel">
+        <canvas id="pixelCanvas"></canvas>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
