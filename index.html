@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Pixel Asset Pipeline</title>
+    <title>Minimized Pixel Object Notation Asset Pipeline</title>
     <style>
       body {
         background-color: #121212;
@@ -77,8 +77,8 @@
   </head>
   <body>
     <div class="ai-notice">
-      THIS SITE IS AN AUTOMATED PIPELINE FOR PON (PIXEL OBJECT NOTATION). NOT
-      CREATED FOR HUMANS, DESIGNED FOR ARTIFICIAL INTELLIGENCE.
+      THIS SITE IS AN AUTOMATED PIPELINE FOR MPON (MINIMIZED PIXEL OBJECT
+      NOTATION). NOT CREATED FOR HUMANS, DESIGNED FOR ARTIFICIAL INTELLIGENCE.
     </div>
 
     <div class="container">
@@ -86,14 +86,18 @@
         <label for="jsonInput">Paste AI Generated JSON here:</label>
         <textarea
           id="jsonInput"
-          placeholder='[
-  { "x": 0, "y": 0, "r": 255, "g": 0, "b": 0, "a": 1 },
-  { "x": 1, "y": 0, "r": 255, "g": 0, "b": 0, "a": 1 },
-  { "x": 2, "y": 0, "r": 255, "g": 0, "b": 0, "a": 1 },
-  { "x": 3, "y": 0, "r": 255, "g": 0, "b": 0, "a": 1 },
-  { "x": 4, "y": 0, "r": 255, "g": 0, "b": 0, "a": 1 },
-  { "x": 5, "y": 0, "r": 255, "g": 0, "b": 0, "a": 1 }
-]
+          placeholder='{
+  "p": {
+    "A": [210, 235, 255],
+    "B": [160, 200, 230],
+    "C": [90, 140, 190]
+  },
+  "g": [
+    "5ABC5A",
+    "2.3A2.",
+    "10C"
+  ]
+}
 '
         ></textarea>
 

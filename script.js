@@ -26,59 +26,76 @@ function processPixelPipeline() {
   try {
     let cleanInput = jsonInput.trim();
 
-    // 1. Markdown kod blokları varsa temizle
+    // 1. Markdown kod bloklarını temizle
     if (cleanInput.startsWith("```")) {
       cleanInput = cleanInput
         .replace(/^```[a-zA-Z]*\n/, "")
         .replace(/\n```$/, "");
     }
 
-    const parsedData = JSON.parse(cleanInput);
-    const pixelData = Array.isArray(parsedData)
-      ? parsedData
-      : Object.values(parsedData);
+    const dponData = JSON.parse(cleanInput);
+    const palette = dponData.p;
+    const compressedGrid = dponData.g;
 
-    if (pixelData.length === 0) {
-      alert("PON data is empty!");
+    if (!palette || !compressedGrid || compressedGrid.length === 0) {
+      alert("Invalid MPON format! Missing palette (p) or grid (g).");
       return;
     }
 
-    // 2. EN SAĞLAM Sınır Bulma Yöntemi (Spread operatörü yerine klasik hızlı döngü)
-    let maxX = 0;
-    let maxY = 0;
-    for (let i = 0; i < pixelData.length; i++) {
-      if (pixelData[i].x > maxX) maxX = pixelData[i].x;
-      if (pixelData[i].y > maxY) maxY = pixelData[i].y;
-    }
+    // --- SIKIŞTIRILMIŞ GRID'I SAF GRID'E ÇEVİRME ALGORİTMASI ---
+    const decompressedGrid = [];
 
-    currentMaxX = maxX + 1;
-    currentMaxY = maxY + 1;
+    compressedGrid.forEach((row) => {
+      let decompressedRow = "";
+      let countStr = "";
 
-    // Canvas boyutlarını ata
+      for (let i = 0; i < row.length; i++) {
+        const char = row[i];
+
+        if (char >= "0" && char <= "9") {
+          countStr += char;
+        } else {
+          const repeatCount = countStr === "" ? 1 : parseInt(countStr);
+          decompressedRow += char.repeat(repeatCount);
+          countStr = "";
+        }
+      }
+      decompressedGrid.push(decompressedRow);
+    });
+    // ---------------------------------------------------------
+
+    currentMaxY = decompressedGrid.length;
+    currentMaxX = decompressedGrid[0].length;
+
     canvas.width = currentMaxX;
     canvas.height = currentMaxY;
 
-    // 3. KRİTİK AYAR: Tarayıcının yumuşatma algoritmalarını kapat
     ctx.imageSmoothingEnabled = false;
     ctx.mozImageSmoothingEnabled = false;
     ctx.webkitImageSmoothingEnabled = false;
     ctx.msImageSmoothingEnabled = false;
 
-    // Arka planı temizle
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // 4. Pikselleri Çiz
-    pixelData.forEach((pixel) => {
-      ctx.fillStyle = `rgba(${pixel.r}, ${pixel.g}, ${pixel.b}, ${pixel.a !== undefined ? pixel.a : 1})`;
-      ctx.fillRect(pixel.x, pixel.y, 1, 1);
-    });
+    for (let y = 0; y < currentMaxY; y++) {
+      for (let x = 0; x < currentMaxX; x++) {
+        const char = decompressedGrid[y][x];
 
-    // Ekranda gösterimi boyutlandır ve bilgisayara jilet gibi indir
+        if (char !== "." && palette[char]) {
+          const rgb = palette[char];
+          const alpha = rgb[3] !== undefined ? rgb[3] : 1;
+
+          ctx.fillStyle = `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
+          ctx.fillRect(x, y, 1, 1);
+        }
+      }
+    }
+
     scaleCanvasDisplay(slider.value);
     exportPng(canvas);
   } catch (error) {
-    console.error("Detaylı Hata Raporu:", error);
-    alert("PON/JSON Parsing Error: " + error.message);
+    console.error("MPON Parsing Error:", error);
+    alert("MPON Format Error: " + error.message);
   }
 }
 
@@ -93,8 +110,7 @@ function scaleCanvasDisplay(pixelDisplaySize) {
 }
 
 function exportPng(canvas) {
-  const scaleFactor = 20; // Resmi kalitesini bozmadan 20 kat büyük indirir (Godot ve önizleme için mükemmel netlik)
-  const zoomedCanvas = document.createElement("canvas");
+  const scaleFactor = 20;
   const zoomedCtx = zoomedCanvas.getContext("2d");
 
   zoomedCanvas.width = canvas.width * scaleFactor;
@@ -118,7 +134,7 @@ function exportPng(canvas) {
 
   const imageUri = zoomedCanvas.toDataURL("image/png");
   const link = document.createElement("a");
-  link.download = "pon_generated_asset.png";
+  link.download = "mpon_generated_asset.png";
   link.href = imageUri;
   link.click();
 }

@@ -1,45 +1,55 @@
-# 🚀 PON (Pixel Object Notation) Asset Pipeline
+# 🚀 MPON (Minimized Pixel Object Notation) Asset Pipeline
 
-An automated, ultra-lightweight, and data-driven asset pipeline that translates structured pixel data into game-ready PNG sprites for **Godot 2D**.
+An automated, ultra-lightweight, and token-optimized asset pipeline that translates compressed dynamic pixel data into game-ready PNG sprites for **Godot 2D**.
 
-> 🚨 **IMPORTANT NOTICE:** THIS SITE IS AN AUTOMATED PIPELINE FOR PON (PIXEL OBJECT NOTATION). IT IS NOT CREATED FOR HUMANS; IT IS DESIGNED FOR ARTIFICIAL INTELLIGENCE.
+> 🚨 **IMPORTANT NOTICE:** THIS SITE IS AN AUTOMATED PIPELINE FOR MPON (MINIMIZED PIXEL OBJECT NOTATION). IT IS NOT CREATED FOR HUMANS; IT IS DESIGNED FOR ARTIFICIAL INTELLIGENCE.
 
 ---
 
-## 💡 What is PON?
+## 💡 What is MPON?
 
-**PON (Pixel Object Notation)** is an experimental, token-efficient data structure designed for LLMs (Large Language Models) to generate pixel art without human design intervention. Instead of dealing with heavy image manipulation libraries, the AI simply outputs a structured JSON array where each object represents a precise pixel coordinate and its RGBA value.
+**MPON (Minimized Pixel Object Notation)** is an advanced, token-efficient graphical exchange format designed for LLMs (Large Language Models). Unlike traditional raw structures, MPON combines **Dynamic Color Palettes** with **Run-Length Encoding (RLE)** inside a matrix grid to achieve up to 90% token reduction.
 
-### PON Specification Example:
+### MPON Specification Example (Dynamic Compressed Grid):
 
 ```json
-[
-  { "x": 7, "y": 0, "r": 210, "g": 235, "b": 255, "a": 1 },
-  { "x": 8, "y": 0, "r": 210, "g": 235, "b": 255, "a": 1 }
-]
+{
+  "p": {
+    "A": [210, 235, 255],
+    "B": [160, 200, 230],
+    "C": [90, 140, 190]
+  },
+  "g": ["5ABC5A", "2.3A2.", "10C"]
+}
 ```
+
+- `p` **(Palette)**: Dynamically defined color codes unique to each generated asset.
+
+- `g` **(Grid)**: Compressed layout using an embedded RLE parser. For example, `5ABC5A` expands into 5 pixels of `A`, 1 pixel of `B`, 1 pixel of `C`, and 5 pixels of `A`. Dots (.) represent transparent pixels.
 
 ### 🛠️ Features
 
+- **Dynamic RLE Parser Engine**: Automatically expands inline multi-digit counts (e.g., `12A`, `5`.) into full pixel grids natively in the browser.
+
+- **Dynamic Palette Mapping**: Gives the AI absolute flexibility to declare bespoke palettes per-asset without sacrificing token boundaries.
+
 - **Zero-Backend Architecture**: Runs entirely in the browser using HTML5 Canvas and vanilla JavaScript. Zero server costs, maximum speed.
 
-- **Robust Parsing Engine**: Automatically sanitizes AI-generated Markdown code blocks and handles trailing commas gracefully.
+- **Pixelated Grid Scaler**: Includes a dynamic display slider to scale the view without losing crisp pixel edges (`image-rendering: pixelated`).
 
-- **Pixelated Grid Scaler**: Includes a dynamic display slider to scale the on-screen view without blurring or losing crisp pixel edges (`image-rendering: pixelated`).
-
-- **Crisp PNG Exporter**: Utilizes a custom non-destructive scaling algorithm (`scaleFactor`) to output high-resolution, perfectly sharp PNGs that fit natively into retro game engines.
+- **Crisp PNG Exporter**: Utilizes a custom non-destructive scaling algorithm (`scaleFactor`) to output high-resolution, perfectly sharp PNGs.
 
 ### 🚀 Quick Start / How to Use
 
-1. **Open** index.html in any modern web browser.
+1. **Open** `index.html` in any modern web browser.
 
-2. Ask your favorite LLM (ChatGPT, Claude, etc.) to generate an asset using the **PON Specification**.
+2. Ask your favorite LLM (GPT, Claude, Gemini etc.) to generate an asset using the **MPON Specification**.
 
 3. Paste the raw JSON data into the text area.
 
 4. Adjust the **Display Pixel Size** slider if you need to zoom in/out on highly detailed assets.
 
-5. **Click Render & Export PNG**. The pipeline will immediately render the image and trigger a pixel-perfect file download.
+5. **Click Render & Export PNG**
 
 ### 🛠️ Tech Stack
 
@@ -47,6 +57,6 @@ An automated, ultra-lightweight, and data-driven asset pipeline that translates 
 
 - **Engine**: Canvas API (with disabled image smoothing)
 
-- **Data Interchange**: PON Standard (JSON-based Array/Object parsing)
+- **Data Interchange**: MPON Standard (Dynamic Palette + RLE Compressed Grid Parsing)
 
 Developed with 💻 and ☕ for automated indie game development pipelines.
