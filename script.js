@@ -26,7 +26,6 @@ function processPixelPipeline() {
   try {
     let cleanInput = jsonInput.trim();
 
-    // 1. Markdown kod bloklarını temizle
     if (cleanInput.startsWith("```")) {
       cleanInput = cleanInput
         .replace(/^```[a-zA-Z]*\n/, "")
@@ -42,15 +41,22 @@ function processPixelPipeline() {
       return;
     }
 
-    // --- SIKIŞTIRILMIŞ GRID'I SAF GRID'E ÇEVİRME ALGORİTMASI ---
     const decompressedGrid = [];
 
     compressedGrid.forEach((row) => {
       let decompressedRow = "";
       let countStr = "";
+      let verticalCount = 1;
 
-      for (let i = 0; i < row.length; i++) {
-        const char = row[i];
+      let targetRowText = row;
+      if (row.includes("x")) {
+        const parts = row.split("x");
+        targetRowText = parts[0];
+        verticalCount = parseInt(parts[1]);
+      }
+
+      for (let i = 0; i < targetRowText.length; i++) {
+        const char = targetRowText[i];
 
         if (char >= "0" && char <= "9") {
           countStr += char;
@@ -60,9 +66,11 @@ function processPixelPipeline() {
           countStr = "";
         }
       }
-      decompressedGrid.push(decompressedRow);
+
+      for (let v = 0; v < verticalCount; v++) {
+        decompressedGrid.push(decompressedRow);
+      }
     });
-    // ---------------------------------------------------------
 
     currentMaxY = decompressedGrid.length;
     currentMaxX = decompressedGrid[0].length;
@@ -71,10 +79,6 @@ function processPixelPipeline() {
     canvas.height = currentMaxY;
 
     ctx.imageSmoothingEnabled = false;
-    ctx.mozImageSmoothingEnabled = false;
-    ctx.webkitImageSmoothingEnabled = false;
-    ctx.msImageSmoothingEnabled = false;
-
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     for (let y = 0; y < currentMaxY; y++) {
@@ -105,20 +109,18 @@ function scaleCanvasDisplay(pixelDisplaySize) {
     canvas.style.width = currentMaxX * pixelDisplaySize + "px";
     canvas.style.height = currentMaxY * pixelDisplaySize + "px";
     canvas.style.imageRendering = "pixelated";
-    canvas.style.imageRendering = "crisp-edges";
   }
 }
 
 function exportPng(canvas) {
   const scaleFactor = 20;
+  const zoomedCanvas = document.createElement("canvas");
   const zoomedCtx = zoomedCanvas.getContext("2d");
 
   zoomedCanvas.width = canvas.width * scaleFactor;
   zoomedCanvas.height = canvas.height * scaleFactor;
 
   zoomedCtx.imageSmoothingEnabled = false;
-  zoomedCtx.webkitImageSmoothingEnabled = false;
-  zoomedCtx.mozImageSmoothingEnabled = false;
 
   zoomedCtx.drawImage(
     canvas,
