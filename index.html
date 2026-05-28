@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Minimized Pixel Object Notation Asset Pipeline</title>
+    <title>Minimized Pixel Line Notation (.MPLN) Studio</title>
     <style>
       body {
         background-color: #121212;
@@ -15,18 +15,19 @@
         padding: 20px;
       }
       .ai-notice {
-        color: #ff3333;
-        border: 1px solid #ff3333;
+        color: #00ff00;
+        border: 1px solid #00ff00;
         padding: 10px 20px;
         margin-bottom: 20px;
         text-transform: uppercase;
         font-weight: bold;
         letter-spacing: 1px;
+        text-align: center;
       }
       .container {
         display: flex;
         gap: 20px;
-        max-width: 1000px;
+        max-width: 1100px;
         width: 100%;
       }
       .control-panel {
@@ -37,13 +38,14 @@
       }
       textarea {
         width: 100%;
-        height: 300px;
+        height: 250px;
         background-color: #1e1e1e;
         color: #00ff00;
         border: 1px solid #333;
         padding: 10px;
         font-family: monospace;
         resize: none;
+        box-sizing: border-box;
       }
       .canvas-panel {
         flex: 1;
@@ -57,70 +59,217 @@
         justify-content: center;
       }
       .slider-container {
-        margin-bottom: 15px;
+        margin-top: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+      }
+      .slider-container input {
+        flex: 1;
+      }
+      .number-row {
         display: flex;
         align-items: center;
         gap: 10px;
       }
+      .number-row input {
+        width: 90px;
+        background: #1e1e1e;
+        border: 1px solid #444;
+        color: #fff;
+        padding: 6px;
+        font-family: inherit;
+      }
+      .number-row select {
+        background: #1e1e1e;
+        border: 1px solid #444;
+        color: #fff;
+        padding: 6px;
+        font-family: inherit;
+      }
       button {
-        background-color: #007acc;
         color: white;
         border: none;
-        padding: 10px 20px;
+        padding: 12px 20px;
         cursor: pointer;
         font-weight: bold;
+        text-transform: uppercase;
+        transition: background 0.2s;
       }
-      button:hover {
+      #renderBtn {
+        background-color: #007acc;
+      }
+      #renderBtn:hover {
         background-color: #005999;
+      }
+      #exportMplnBtn {
+        background-color: #28a745;
+      }
+      #exportMplnBtn:hover {
+        background-color: #218838;
+      }
+      .button-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+      #exportPngBtn,
+      #exportJpgBtn {
+        background-color: #6f42c1;
+      }
+      #exportPngBtn:hover,
+      #exportJpgBtn:hover {
+        background-color: #59359a;
+      }
+
+      .import-box {
+        border: 2px dashed #444;
+        padding: 15px;
+        text-align: center;
+        background: #151515;
+        margin-top: 10px;
+      }
+      .status-line {
+        color: #888;
+        font-size: 12px;
+        min-height: 16px;
+        margin-top: 8px;
+      }
+      .palette-text {
+        height: 74px;
+        margin-top: 8px;
+        color: #d7ffd7;
+        font-size: 12px;
+      }
+      canvas {
+        border: 2px solid #333;
+        background-image:
+          linear-gradient(45deg, #222 25%, transparent 25%),
+          linear-gradient(-45deg, #222 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, #222 75%),
+          linear-gradient(-45deg, transparent 75%, #222 75%);
+        background-size: 16px 16px;
+        background-position:
+          0 0,
+          0 8px,
+          8px -8px,
+          -8px 0px;
       }
     </style>
   </head>
   <body>
-    <div class="ai-notice">
-      THIS SITE IS AN AUTOMATED PIPELINE FOR MPON (MINIMIZED PIXEL OBJECT
-      NOTATION). NOT CREATED FOR HUMANS, DESIGNED FOR ARTIFICIAL INTELLIGENCE.
-    </div>
+    <div class="ai-notice">📡 MPLN ASSET PIPELINE & COMPILER STUDIO</div>
 
     <div class="container">
       <div class="control-panel">
-        <label for="jsonInput">Paste AI Generated JSON here:</label>
+        <label for="jsonInput">MPLN Data:</label>
         <textarea
           id="jsonInput"
-          placeholder='{
-  "p": {
-    "A": [210, 235, 255],
-    "B": [160, 200, 230],
-    "C": [90, 140, 190]
-  },
-  "g": [
-    "5ABC5A",
-    "2.3A2.",
-    "10C"
-  ]
-}
-'
+          placeholder="Paste the MPLN Format Text"
         ></textarea>
 
-        <div class="slider-container">
-          <label for="pixelSizeSlider">Display Pixel Size:</label>
-          <input
-            type="range"
-            id="pixelSizeSlider"
-            min="1"
-            max="50"
-            value="20"
-          />
-          <span id="pixelSizeValue">20px</span>
+        <button id="renderBtn">Render the MPLN</button>
+        <button id="exportMplnBtn">Export as .mpln</button>
+        <div class="button-row">
+          <button id="exportPngBtn">Export PNG</button>
+          <button id="exportJpgBtn">Export JPG</button>
         </div>
 
-        <button id="renderBtn">Render & Export PNG</button>
+        <div class="import-box">
+          <div class="number-row">
+            <label for="importWidthInput">Import Width:</label>
+            <input
+              type="number"
+              id="importWidthInput"
+              min="16"
+              max="256"
+              step="16"
+              value="128"
+            />
+          </div>
+          <div class="number-row" style="margin-top: 8px">
+            <label for="compressionModeSelect">Mode:</label>
+            <select id="compressionModeSelect">
+              <option value="lossy">Lossy</option>
+              <option value="lossless">Lossless</option>
+              <option value="dither">Dither</option>
+            </select>
+          </div>
+          <label
+            for="imageImportInput"
+            style="
+              display: block;
+              margin-bottom: 8px;
+              font-weight: bold;
+              color: #aaa;
+            "
+          >
+            📥 IMPORT PNG/JPG TO MPLN:
+          </label>
+          <input
+            type="file"
+            id="imageImportInput"
+            accept="image/png, image/jpeg"
+          />
+          <label
+            for="paletteImportInput"
+            style="
+              display: block;
+              margin-top: 14px;
+              margin-bottom: 8px;
+              font-weight: bold;
+              color: #aaa;
+            "
+          >
+            CUSTOM PALETTE (.GPL / HEX):
+          </label>
+          <input
+            type="file"
+            id="paletteImportInput"
+            accept=".gpl,.txt,.hex,text/plain"
+          />
+          <textarea
+            id="paletteTextInput"
+            class="palette-text"
+            placeholder="Optional HEX palette: #001122, AABBCC..."
+          ></textarea>
+          <label
+            for="mplnImportInput"
+            style="
+              display: block;
+              margin-top: 14px;
+              margin-bottom: 8px;
+              font-weight: bold;
+              color: #aaa;
+            "
+          >
+            IMPORT .MPLN:
+          </label>
+          <input
+            type="file"
+            id="mplnImportInput"
+            accept=".mpln,text/plain"
+          />
+          <div id="statusLine" class="status-line">Loading scripts...</div>
+        </div>
       </div>
 
       <div class="canvas-panel">
         <canvas id="pixelCanvas"></canvas>
+
+        <div class="slider-container">
+          <label for="pixelSizeSlider">Pixel Size:</label>
+          <input type="range" id="pixelSizeSlider" min="2" max="30" value="8" />
+          <span id="pixelSizeValue">8px</span>
+        </div>
+
+        <canvas id="comparisonCanvas"></canvas>
       </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="core.js?v=20260528-6"></script>
+    <script src="parser.js?v=20260528-6"></script>
+    <script src="script.js?v=20260528-6"></script>
   </body>
 </html>
