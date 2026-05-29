@@ -1,0 +1,18 @@
+# GoLang
+.gocache
+
+# MPLN
+mpln.exe
+*.mpln
+
+# Images
+*.png
+*.jpg
+
+# Texture Files
+*.meta
+*.import
+
+# WebAssembly
+*.wasm
+!mpln.wasm

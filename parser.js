@@ -1,25 +1,72 @@
 (function (global) {
   const PALETTE_SYMBOLS =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwyz!#$%&()*+-/:<=>?@[]^_{}~";
+  const FRAME_DELIMITER = "||";
+
+  function tokenCapacity(tokenWidth) {
+    return PALETTE_SYMBOLS.length ** tokenWidth;
+  }
+
+  function tokenForIndex(index, tokenWidth = 1) {
+    if (index < 0 || index >= tokenCapacity(tokenWidth)) {
+      return null;
+    }
+    if (tokenWidth === 1) {
+      return PALETTE_SYMBOLS[index];
+    }
+    const base = PALETTE_SYMBOLS.length;
+    const chars = new Array(tokenWidth);
+    let value = index;
+    for (let i = tokenWidth - 1; i >= 0; i--) {
+      chars[i] = PALETTE_SYMBOLS[value % base];
+      value = Math.floor(value / base);
+    }
+    return chars.join("");
+  }
+
+  function tokenMapForPalette(paletteLength, tokenWidth) {
+    const map = new Map();
+    for (let index = 0; index < paletteLength; index++) {
+      map.set(tokenForIndex(index, tokenWidth), index);
+    }
+    return map;
+  }
+
+  function parseFrameHeader(value, fallbackColumns) {
+    const header = value.trim();
+    const match = header.match(/^(\d+)x(\d+)(?:;T(\d+))?$/);
+    if (!match) {
+      return null;
+    }
+    const tokenWidth = match[3] ? parseInt(match[3], 10) : 1;
+    if (tokenWidth < 1) {
+      throw new Error(`Invalid token width: T${tokenWidth}.`);
+    }
+    return {
+      declaredRows: parseInt(match[2], 10),
+      tokenWidth,
+      width: parseInt(match[1], 10) || fallbackColumns,
+    };
+  }
 
   /**
-   * MPLN (Minimized Pixel Line Notation) Parser - Stable Core v3.2
-   * @param {string} ponString
+   * MPLN (Manipulated Pixel Line Notation) Parser - Stable Core v3.2
+   * @param {string} mplnString
    * @param {number} fallbackColumns
    */
-  function parsePON(ponString, fallbackColumns = 64) {
-    const sections = ponString.trim().split("|");
+  function parseMPLN(mplnString, fallbackColumns = 64) {
+    const sections = mplnString.trim().split("|");
     if (sections.length !== 2 && sections.length !== 3) {
       throw new Error("Geçersiz MPLN Formatı.");
     }
 
-    const hasDimensionHeader =
-      sections.length === 3 && /^\d+x\d+$/.test(sections[0].trim());
-    const dimension = hasDimensionHeader
-      ? sections[0].trim().split("x").map(Number)
-      : [fallbackColumns, null];
-    const totalColumns = dimension[0];
-    const declaredRows = dimension[1];
+    const header = sections.length === 3
+      ? parseFrameHeader(sections[0], fallbackColumns)
+      : null;
+    const hasDimensionHeader = Boolean(header);
+    const totalColumns = header ? header.width : fallbackColumns;
+    const declaredRows = header ? header.declaredRows : null;
+    const tokenWidth = header ? header.tokenWidth : 1;
     const paletteSection = hasDimensionHeader ? sections[1] : sections[0];
     const rowsSection = hasDimensionHeader ? sections[2] : sections[1];
 
@@ -27,7 +74,7 @@
       .split(",")
       .map((hex) => hex.trim().toUpperCase());
 
-    const alphabet = PALETTE_SYMBOLS.split("");
+    const tokenMap = tokenMapForPalette(palette.length, tokenWidth);
     const rows = rowsSection.split(";");
     const grid = [];
 
@@ -68,14 +115,17 @@
 
         const count = numStr ? parseInt(numStr, 10) : 1;
         const char = trimmedRow[i];
-        i++;
-
         if (!char) break;
 
+        const token = char === "."
+          ? "."
+          : trimmedRow.slice(i, i + tokenWidth);
+        i += token === "." ? 1 : tokenWidth;
+
         let pixelValue = ".";
-        if (char !== ".") {
-          const idx = alphabet.indexOf(char);
-          if (idx !== -1 && idx < palette.length) {
+        if (token !== ".") {
+          const idx = tokenMap.get(token);
+          if (typeof idx === "number" && idx < palette.length) {
             pixelValue = palette[idx];
           }
         }
@@ -104,10 +154,40 @@
       );
     }
 
-    return { palette, grid, width: totalColumns, height: grid.length };
+    return {
+      palette,
+      grid,
+      tokenWidth,
+      width: totalColumns,
+      height: grid.length,
+    };
   }
 
-  const MPLNParser = { PALETTE_SYMBOLS, parsePON };
+  function splitMPLNFrames(mplnString) {
+    return mplnString
+      .split(FRAME_DELIMITER)
+      .map((frame) => frame.trim())
+      .filter(Boolean);
+  }
+
+  function parseMPLNFrames(mplnString, fallbackColumns = 64) {
+    const frames = splitMPLNFrames(mplnString);
+    if (frames.length === 0) {
+      throw new Error("Geçersiz MPLN Formatı.");
+    }
+    return frames.map((frame) => parseMPLN(frame, fallbackColumns));
+  }
+
+  const MPLNParser = {
+    FRAME_DELIMITER,
+    PALETTE_SYMBOLS,
+    parseMPLN,
+    parseMPLNFrames,
+    parsePON: parseMPLN,
+    splitMPLNFrames,
+    tokenCapacity,
+    tokenForIndex,
+  };
 
   global.MPLNParser = MPLNParser;
 

@@ -67,7 +67,7 @@ test("classic scripts can execute together without global name collisions", () =
     vm.runInContext(parser, context);
     vm.runInContext(script, context);
   });
-  assert.equal(typeof context.window.renderPON, "function");
+  assert.equal(typeof context.window.renderMPLN, "function");
 });
 
 test("image import can retry the same file selection", () => {
@@ -79,15 +79,19 @@ test("image import can retry the same file selection", () => {
 
 test("image import uses palette quantization instead of luminance-only sorting", () => {
   const script = readFileSync("script.js", "utf8");
+  const core = readFileSync("core.js", "utf8");
 
-  assert.match(script, /medianCutQuantize/);
-  assert.match(script, /findClosestPaletteIndex/);
+  assert.match(script, /coreEncodeImageDataToMPLN/);
+  assert.match(core, /medianCutQuantize/);
+  assert.match(core, /findClosestPaletteIndex/);
   assert.doesNotMatch(script, /colorPool\.sort\(\(a, b\) => b\.luminance - a\.luminance\)/);
 });
 
 test("ui exposes image export and mpln import controls", () => {
   const html = readFileSync("index.html", "utf8");
 
+  assert.match(html, /wasm_exec\.js/);
+  assert.match(html, /wasm_loader\.js/);
   assert.match(html, /id="importWidthInput"/);
   assert.match(html, /id="compressionModeSelect"/);
   assert.match(html, /id="paletteImportInput"/);
@@ -101,15 +105,22 @@ test("ui exposes image export and mpln import controls", () => {
 
 test("script supports exported images, mpln import, and mirrored comparison", () => {
   const script = readFileSync("script.js", "utf8");
+  const core = readFileSync("core.js", "utf8");
   const html = readFileSync("index.html", "utf8");
 
   assert.match(html, /core\.js\?v=/);
+  assert.match(html, /wasm_loader\.js\?v=/);
   assert.match(script, /window\.MPLNCore/);
+  assert.match(script, /window\.MPLNWasm/);
+  assert.match(script, /coreEncodeImageDataToMPLN/);
+  assert.match(script, /parseMPLNFrames/);
+  assert.match(script, /frame\.grid/);
   assert.match(script, /compressionModeSelect\.value/);
   assert.match(script, /paletteImportInput\.addEventListener\("change"/);
   assert.match(script, /paletteTextInput\.addEventListener\("input"/);
   assert.match(script, /function getImportTargetWidth/);
-  assert.match(script, /\$\{targetWidth\}x\$\{targetHeight\}\|/);
+  assert.match(core, /function encodeImageDataToMPLN/);
+  assert.match(core, /\$\{header\}\|/);
   assert.doesNotMatch(script, /const GRID_COLUMNS = 64/);
   assert.match(script, /function exportRenderedImage/);
   assert.match(script, /mplnImportInput\.addEventListener\("change"/);

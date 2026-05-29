@@ -25,7 +25,10 @@
     text.split(/\r?\n/).forEach((rawLine) => {
       const line = rawLine.trim();
       if (!line) return;
-      if (line.startsWith("#") && !/^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?/.test(line)) {
+      if (
+        line.startsWith("#") &&
+        !/^#[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?/.test(line)
+      ) {
         return;
       }
       if (/^(GIMP Palette|Name:|Columns:)/i.test(line)) return;
@@ -40,10 +43,14 @@
       }
 
       if (!hex) {
-        const hexMatches = line.match(/#?[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?/g) || [];
+        const hexMatches =
+          line.match(/#?[0-9a-fA-F]{6}(?:[0-9a-fA-F]{2})?/g) || [];
         hexMatches.forEach((match) => {
           const normalized = match.replace(/^#/, "").toUpperCase();
-          if ((normalized.length === 6 || normalized.length === 8) && !seen.has(normalized)) {
+          if (
+            (normalized.length === 6 || normalized.length === 8) &&
+            !seen.has(normalized)
+          ) {
             seen.add(normalized);
             colors.push(normalized);
           }
@@ -60,13 +67,18 @@
     return colors;
   }
 
-  function isVisiblePixel(r, g, b, a) {
-    return (
-      a > TRANSPARENT_ALPHA_THRESHOLD &&
-      (r > NEAR_BLACK_THRESHOLD ||
+  function isVisiblePixel(r, g, b, a, transparentNearBlack = false) {
+    if (a <= TRANSPARENT_ALPHA_THRESHOLD) {
+      return false;
+    }
+    if (transparentNearBlack) {
+      return (
+        r > NEAR_BLACK_THRESHOLD ||
         g > NEAR_BLACK_THRESHOLD ||
-        b > NEAR_BLACK_THRESHOLD)
-    );
+        b > NEAR_BLACK_THRESHOLD
+      );
+    }
+    return true;
   }
 
   function colorBoxRange(colors) {
@@ -208,22 +220,50 @@
     ).slice(0, limit);
   }
 
-  function buildPalette(colors, limit, mode = "lossy", customPaletteHexes = []) {
+  function buildPalette(
+    colors,
+    limit,
+    mode = "lossy",
+    customPaletteHexes = [],
+  ) {
     const forcedPalette = normalizePalette(customPaletteHexes, limit);
     if (forcedPalette.length > 0) {
       return forcedPalette;
     }
 
     if (mode === "lossless") {
-      if (colors.length > limit) {
-        throw new Error(
-          `Lossless mode needs ${colors.length} colors but only ${limit} symbols are available.`,
-        );
+      if (colors.length <= limit) {
+        return colors.map((color) => color.hex);
       }
-      return colors.map((color) => color.hex);
+      return medianCutQuantize(colors, limit);
     }
 
     return medianCutQuantize(colors, limit);
+  }
+
+  function tokenCapacity(paletteSymbols, tokenWidth) {
+    return paletteSymbols.length ** tokenWidth;
+  }
+
+  function tokenWidthForColorCount(colorCount, paletteSymbols) {
+    if (colorCount <= tokenCapacity(paletteSymbols, 1)) {
+      return 1;
+    }
+    return 2;
+  }
+
+  function tokenForIndex(index, paletteSymbols, tokenWidth) {
+    if (tokenWidth === 1) {
+      return paletteSymbols[index];
+    }
+    const base = paletteSymbols.length;
+    const chars = new Array(tokenWidth);
+    let value = index;
+    for (let i = tokenWidth - 1; i >= 0; i--) {
+      chars[i] = paletteSymbols[value % base];
+      value = Math.floor(value / base);
+    }
+    return chars.join("");
   }
 
   function colorDistance(a, b) {
@@ -249,10 +289,27 @@
     return closestIdx;
   }
 
-  function addError(buffer, width, height, x, y, error, factor) {
+  function addError(
+    buffer,
+    width,
+    height,
+    x,
+    y,
+    error,
+    factor,
+    transparentNearBlack,
+  ) {
     if (x < 0 || x >= width || y < 0 || y >= height) return;
     const index = (y * width + x) * 4;
-    if (!isVisiblePixel(buffer[index], buffer[index + 1], buffer[index + 2], buffer[index + 3])) {
+    if (
+      !isVisiblePixel(
+        buffer[index],
+        buffer[index + 1],
+        buffer[index + 2],
+        buffer[index + 3],
+        transparentNearBlack,
+      )
+    ) {
       return;
     }
 
@@ -261,13 +318,18 @@
     buffer[index + 2] += error.b * factor;
   }
 
-  function mapImageDataToPaletteIndices(imgData, width, height, paletteHexes, mode = "lossy") {
+  function mapImageDataToPaletteIndices(
+    imgData,
+    width,
+    height,
+    paletteHexes,
+    mode = "lossy",
+    transparentNearBlack = false,
+  ) {
     const paletteColors = paletteHexes.map(hexToRgba);
     const indices = new Array(width * height).fill(-1);
     const useDither = mode === "dither";
-    const buffer = useDither
-      ? Array.from(imgData, (value) => value)
-      : imgData;
+    const buffer = useDither ? Array.from(imgData, (value) => value) : imgData;
 
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
@@ -277,7 +339,10 @@
         const b = buffer[pixelIndex + 2];
         const a = buffer[pixelIndex + 3];
 
-        if (!isVisiblePixel(r, g, b, a) || paletteColors.length === 0) {
+        if (
+          !isVisiblePixel(r, g, b, a, transparentNearBlack) ||
+          paletteColors.length === 0
+        ) {
           continue;
         }
 
@@ -292,10 +357,46 @@
             g: g - target.g,
             b: b - target.b,
           };
-          addError(buffer, width, height, x + 1, y, error, 7 / 16);
-          addError(buffer, width, height, x - 1, y + 1, error, 3 / 16);
-          addError(buffer, width, height, x, y + 1, error, 5 / 16);
-          addError(buffer, width, height, x + 1, y + 1, error, 1 / 16);
+          addError(
+            buffer,
+            width,
+            height,
+            x + 1,
+            y,
+            error,
+            7 / 16,
+            transparentNearBlack,
+          );
+          addError(
+            buffer,
+            width,
+            height,
+            x - 1,
+            y + 1,
+            error,
+            3 / 16,
+            transparentNearBlack,
+          );
+          addError(
+            buffer,
+            width,
+            height,
+            x,
+            y + 1,
+            error,
+            5 / 16,
+            transparentNearBlack,
+          );
+          addError(
+            buffer,
+            width,
+            height,
+            x + 1,
+            y + 1,
+            error,
+            1 / 16,
+            transparentNearBlack,
+          );
         }
       }
     }
@@ -303,8 +404,124 @@
     return indices;
   }
 
+  function rleLine(chars) {
+    if (chars.length === 0) return "";
+    const tokens = [];
+    let current = chars[0];
+    let count = 1;
+
+    for (let i = 1; i < chars.length; i++) {
+      if (chars[i] === current) {
+        count++;
+      } else {
+        tokens.push(count === 1 ? current : `${count}${current}`);
+        current = chars[i];
+        count = 1;
+      }
+    }
+    tokens.push(count === 1 ? current : `${count}${current}`);
+    return tokens.join("");
+  }
+
+  function compressEmptyRows(lines, width) {
+    const optimized = [];
+    const emptyRow = `${width}.`;
+    let emptyRun = 0;
+
+    lines.forEach((line) => {
+      if (line === emptyRow) {
+        emptyRun++;
+        return;
+      }
+      if (emptyRun > 0) {
+        optimized.push(`${emptyRun}x${width}`);
+        emptyRun = 0;
+      }
+      optimized.push(line);
+    });
+
+    if (emptyRun > 0) {
+      optimized.push(`${emptyRun}x${width}`);
+    }
+    return optimized;
+  }
+
+  function encodeImageDataToMPLN(imgData, width, height, options = {}) {
+    const mode = options.mode || "lossy";
+    const paletteSymbols = options.paletteSymbols;
+    if (!paletteSymbols) {
+      throw new Error("encodeImageDataToMPLN requires paletteSymbols.");
+    }
+    const transparentNearBlack = Boolean(options.transparentNearBlack);
+    const colorMap = new Map();
+
+    for (let i = 0; i < imgData.length; i += 4) {
+      const r = imgData[i];
+      const g = imgData[i + 1];
+      const b = imgData[i + 2];
+      const a = imgData[i + 3];
+
+      if (isVisiblePixel(r, g, b, a, transparentNearBlack)) {
+        const hex = rgbaToHex(r, g, b, a);
+        const existing = colorMap.get(hex);
+        if (existing) {
+          existing.count++;
+        } else {
+          colorMap.set(hex, { hex, r, g, b, a, count: 1 });
+        }
+      }
+    }
+
+    const colorPool = Array.from(colorMap.values());
+    const customPaletteCount = parsePaletteText(
+      (options.customPaletteHexes || []).join("\n"),
+    ).length;
+    const requestedColorCount = Math.max(colorPool.length, customPaletteCount);
+    const tokenWidth = tokenWidthForColorCount(requestedColorCount, paletteSymbols);
+    const colorLimit = tokenCapacity(paletteSymbols, tokenWidth);
+
+    let palette = buildPalette(
+      colorPool,
+      colorLimit,
+      mode,
+      options.customPaletteHexes || [],
+    );
+    if (palette.length === 0) {
+      palette = ["000000"];
+    }
+
+    const pixelIndices = mapImageDataToPaletteIndices(
+      imgData,
+      width,
+      height,
+      palette,
+      mode,
+      transparentNearBlack,
+    );
+    const lines = [];
+    for (let y = 0; y < height; y++) {
+      const chars = [];
+      for (let x = 0; x < width; x++) {
+        const index = pixelIndices[y * width + x];
+        chars.push(
+          index >= 0 && index < palette.length
+            ? tokenForIndex(index, paletteSymbols, tokenWidth)
+            : ".",
+        );
+      }
+      lines.push(rleLine(chars));
+    }
+
+    const optimized = compressEmptyRows(lines, width);
+    const header = tokenWidth === 1
+      ? `${width}x${height}`
+      : `${width}x${height};T${tokenWidth}`;
+    return `${header}|${palette.join(",")}|${optimized.join(";")};`;
+  }
+
   const MPLNCore = {
     buildPalette,
+    encodeImageDataToMPLN,
     findClosestPaletteIndex,
     hexToRgba,
     isVisiblePixel,
@@ -312,6 +529,9 @@
     medianCutQuantize,
     parsePaletteText,
     rgbaToHex,
+    tokenCapacity,
+    tokenForIndex,
+    tokenWidthForColorCount,
   };
 
   global.MPLNCore = MPLNCore;
